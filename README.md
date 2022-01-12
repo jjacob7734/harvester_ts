@@ -20,7 +20,11 @@ The values in `dataset.yaml` may be constructed
 using the string substitution templates for elements of date or time,
 as described below.  You must define the following required keywords in
 `dataset.yaml`:
-    * `url_template`: Web address of remote data granules
+    * `url_template`: Web address of remote data granules.  These may
+    begin with `https://`, `http://`, or `ftp://`. If credentials are
+    required for the remote data access, they can be provided securely
+    in your `.netrc` file.  For more information on how to use the `.netrc`
+    file, see https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html.
     * `local_path_template`: Desired local path for data granules.  This
     should specify a relative path that will be automatically combined
     with the base directory specified with the `-b` option to the harvester
@@ -32,7 +36,9 @@ as described below.  You must define the following required keywords in
     time stamp in the filename (see below), and (ii) is combined with the base
     directory specified as a command-line argument to produce an absolute
     path for the harvested file.
-    * `time_res`: Time increment between data granules (see below)
+    * `time_res`: Time increment between data granules (see below).  Examples:
+    `1d` for data produced daily, `6h` for data produced every 6 hours, `30m`
+    for data produced every 30 minutes.
 4. Run `harvest.py` on the dataset directory (see example below)
 
 ## Template string substitution in the configuration
@@ -98,7 +104,7 @@ base directory to automatically generate the absolute path, as described
 above.
 
 The examples below are intended to show the ways `-s`, `-e`, and `-n` options
-can be combined to specify the dates to harvest to a local file system 
+can be combined to specify the dates to harvest to a local file system.
 The `-b` option is used to indicate the base directory for the relative
 path specified in the `local_path_template` variable of the dataset 
 configuration (see above).
