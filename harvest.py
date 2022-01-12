@@ -5,6 +5,7 @@ import logging
 import yaml
 from subprocess import run
 from netCDF4 import Dataset
+import boto3
 
 
 def parse_args():
@@ -14,16 +15,18 @@ def parse_args():
         ArgumentParse: command line parameters
     """
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("-ds", "--dataset_name",
-                        help="name of dataset to harvest")
-    parser.add_argument("-b", "--data_basedir",
+    parser.add_argument("-b", "--basedir",
                         help="path to local dataset directory")
+    parser.add_argument("-B", "--s3_basedir",
+                        help="path to local dataset folder on S3")
     parser.add_argument("-s", "--start_date",
                         help="start date to harvest (YYYYMMDD)")
     parser.add_argument("-e", "--end_date",
                         help="end date to harvest (YYYYMMDD)")
     parser.add_argument("-n", "--num_days", type=int,
                         help="number of days to harvest")
+    parser.add_argument("-p", "--profile",
+                        help="profile for aws secret keys")
     args = parser.parse_args()
     return args
 
@@ -193,8 +196,16 @@ def paths_generator(start_date, end_date, local_basedir, dataset_conf):
         yield url, local_path, local_fname
         cur_date += time_incr
 
+def upload_to_s3(local_path, s3_path, s3_profile):
+    s3_path_split = s3_path[5:].split('/')
+    s3_bucket = s3_path_split[0]
+    s3_key = os.path.join(*s3_path_split[1:])
+    s3client = boto3.Session(profile_name=s3_profile).client('s3')
+    s3client.upload_file(local_path, s3_bucket, s3_key)
+
 def harvest_date_range(start_date, end_date, local_basedir,
-                       dataset_conf, hidden_dirpath, logger=None):
+                       dataset_conf, hidden_dirpath, 
+                       s3_basedir=None, s3_profile=None, logger=None):
     """Retrieve granules in the specified time range.
 
     Args:
@@ -212,7 +223,8 @@ def harvest_date_range(start_date, end_date, local_basedir,
                       format(hidden_dirpath))
         
     for url, local_path, local_fname in paths_generator(start_date, end_date,
-                                           local_basedir, dataset_conf):
+                                                        local_basedir,
+                                                        dataset_conf):
         local_dir = os.path.dirname(local_path)
         base_fname = os.path.basename(local_path)
         tmp_fname = os.path.join(hidden_dirpath, base_fname)
@@ -227,10 +239,14 @@ def harvest_date_range(start_date, end_date, local_basedir,
                     os.remove(tmp_fname)
                 logger.error("Unable to download {}".format(url))
             else:
-                os.rename(tmp_fname, local_fname)
+                os.rename(tmp_fname, local_path)
                 logger.warning("Downloaded {} to {}".format(url, local_path))
+                if s3_basedir is not None:
+                    s3_path = os.path.join(s3_basedir, local_fname)
+                    upload_to_s3(local_path, s3_path, s3_profile)
+                    logger.warning("Uploaded to {}".format(s3_path))
   
-def main(ds_name="",event_time=None):
+def main():
     """Main program.  Parse arguments, and harvest the requested dates from
     the remote archive.
     """
@@ -241,19 +257,20 @@ def main(ds_name="",event_time=None):
     # Parse arguments and set date range to harvest
     args = vars(parse_args()) # convert namespace object to dict
 
-    local_basedir = args.get('data_basedir')
+    # Set base directory for harvested data.
+    local_basedir = args.get('basedir')
+    s3_basedir = args.get('s3_basedir')
+    s3_profile = args.get("profile")
 
-    # set start/end dates
+    # Set start/end dates
     date_fmt_precise = "%Y-%m-%dT%H:%M:%SZ"
     date_fmt = "%Y%m%d"
     start_date, end_date = set_date_range(args, date_fmt=date_fmt, logger=logger)
     start_date_str = start_date.strftime(date_fmt_precise)
     end_date_str = end_date.strftime(date_fmt_precise)
-    # print('start date {}'.format(start_date_str))
-    # print('end date {}'.format(end_date_str))
     logger.info("Harvesting between {} and {} to {}".format(start_date_str,
-                                                                end_date_str,
-                                                                local_basedir))
+                                                            end_date_str,
+                                                            local_basedir))
    
     # Read dataset configuration
     # dataset_rtma_15min_noaa.yaml
@@ -266,7 +283,8 @@ def main(ds_name="",event_time=None):
     
     # Harvest data for the specified date range from the remote archive.
     harvest_date_range(start_date, end_date, local_basedir, dataset_conf, 
-                       hidden_dirpath, logger=logger)
+                       hidden_dirpath, s3_basedir=s3_basedir, 
+                       s3_profile=s3_profile, logger=logger)
 
 
 if __name__ == "__main__":
