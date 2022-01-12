@@ -88,10 +88,13 @@ optional arguments:
 Any sensible combination of the `-s`, `-e`, or `-n` parameters can be used
 to specify the desired date range to harvest:
 
-If a `-b --data_basedir` argument is provided, then the data will be harvested
-to the specified local path.  If a `-B --s3_data_basedir` argument is provide,
-then the data will additionally be uploaded to the specified bucket/folder
-on AWS S3.
+If the `-b --data_basedir` argument is provided, then the data will be 
+harvested to the specified local path.  If the `-B --s3_data_basedir` 
+argument is provided, then the data will additionally be uploaded to the 
+specified bucket/folder on AWS S3.  For both local files and S3 paths, the 
+`local_path_template` in the dataset configuration file is combined with the
+base directory to automatically generate the absolute path, as described 
+above.
 
 ### Example: Specify start and end dates:
 
