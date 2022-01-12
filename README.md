@@ -90,23 +90,20 @@ to specify the desired date range to harvest:
 
 If the `-b --data_basedir` argument is provided, then the data will be 
 harvested to the specified local path.  If the `-B --s3_data_basedir` 
-argument is provided, then the data will additionally be uploaded to the 
+and `-p --profile` arguments are provided, 
+then the data will additionally be uploaded to the 
 specified bucket/folder on AWS S3.  For both local files and S3 paths, the 
 `local_path_template` in the dataset configuration file is combined with the
 base directory to automatically generate the absolute path, as described 
 above.
 
-### Example: Specify start and end dates:
-
-These examples are intended to show the ways `-s`, `-e`, and `-n` options
+The examples below are intended to show the ways `-s`, `-e`, and `-n` options
 can be combined to specify the dates to harvest to a local file system 
-(with the `-b` option used to indicate the base directory for the relative
+The `-b` option is used to indicate the base directory for the relative
 path specified in the `local_path_template` variable of the dataset 
 configuration (see above).
 
-If upload to AWS S3 is desired (not shown in these examples), the `-B` 
-option may be used to specify the S3 file path prefix and the `-p` option
-may be used to specify the AWS credential profile to be used.
+### Example: Specify start and end dates:
 
 ```
 python3 harvest.py -s 20190921 -e 20190927 -b /data/mydata
