@@ -86,7 +86,7 @@ optional arguments:
 ```
 
 Any sensible combination of the `-s`, `-e`, or `-n` parameters can be used
-to specify the desirered date range to harvest:
+to specify the desired date range to harvest:
 
 If a `-b --data_basedir` argument is provided, then the data will be harvested
 to the specified local path.  If a `-B --s3_data_basedir` argument is provide,
@@ -99,9 +99,9 @@ These examples are intended to show the ways `-s`, `-e`, and `-n` options
 can be to specify the dates to harvest to a local file system (with the `-b`
 option used to indicate the base directory for the relative paths specified in
 the `local_path_template` variable of the dataset configuration	(see above).
-If upload to AWS S3 is desired (not shown in these examples), the `-B` and
-`-p` argument may be used to specify the S3 file path prefix and AWS
-credential profile to be used.
+If upload to AWS S3 is desired (not shown in these examples), the `-B` 
+option may be used to specify the S3 file path prefix and the `-p` option
+may be used to specify the AWS credential profile to be used.
 
 ```
 python3 harvest.py -s 20190921 -e 20190927 -b /data/mydata
