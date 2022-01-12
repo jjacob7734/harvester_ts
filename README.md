@@ -99,9 +99,11 @@ above.
 ### Example: Specify start and end dates:
 
 These examples are intended to show the ways `-s`, `-e`, and `-n` options
-can be to specify the dates to harvest to a local file system (with the `-b`
-option used to indicate the base directory for the relative paths specified in
-the `local_path_template` variable of the dataset configuration	(see above).
+can be combined to specify the dates to harvest to a local file system 
+(with the `-b` option used to indicate the base directory for the relative
+path specified in the `local_path_template` variable of the dataset 
+configuration (see above).
+
 If upload to AWS S3 is desired (not shown in these examples), the `-B` 
 option may be used to specify the S3 file path prefix and the `-p` option
 may be used to specify the AWS credential profile to be used.
