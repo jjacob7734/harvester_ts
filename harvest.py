@@ -204,7 +204,7 @@ def upload_to_s3(local_path, s3_path, s3_profile):
     s3client.upload_file(local_path, s3_bucket, s3_key)
 
 def harvest_date_range(start_date, end_date, local_basedir,
-                       dataset_conf, hidden_dirpath, tmp_dirpath, 
+                       dataset_conf, hfiles_dirpath,
                        s3_basedir=None, s3_profile=None, logger=None):
     """Retrieve granules in the specified time range.
 
@@ -218,16 +218,16 @@ def harvest_date_range(start_date, end_date, local_basedir,
     if not os.path.exists(local_basedir):
         raise OSError("Local base directory {} must be created.".\
                       format(local_basedir))
-    if not os.path.exists(hidden_dirpath):
-        raise OSError("Hidden directory {} must be created.".\
-                      format(hidden_dirpath))
+    if not os.path.exists(hfiles_dirpath):
+        raise OSError("Harvester files directory {} must be created.".\
+                      format(hfiles_dirpath))
         
     for url, local_path, local_fname in paths_generator(start_date, end_date,
                                                         local_basedir,
                                                         dataset_conf):
         local_dir = os.path.dirname(local_path)
         base_fname = os.path.basename(local_path)
-        tmp_fname = os.path.join(tmp_dirpath, base_fname)
+        tmp_fname = os.path.join(hfiles_dirpath, base_fname)
         if not os.path.exists(local_dir):
             os.makedirs(local_dir)
         if not os.path.exists(local_path):
@@ -273,19 +273,17 @@ def main():
                                                             local_basedir))
    
     # Read dataset configuration
-    hidden_dirname = ".harvest"
     conf_fname = "dataset.yaml"
-    tmp_dirname = "tmp"
-    tmp_dirpath = os.path.join(os.path.dirname(local_basedir),
-                               tmp_dirname,
+    hfiles_dirname = "harvester_files"
+    hfiles_dirpath = os.path.join(os.path.dirname(local_basedir),
+                               hfiles_dirname,
                                os.path.basename(local_basedir))
-    hidden_dirpath = os.path.join(local_basedir, hidden_dirname)
-    conf_fname = os.path.join(hidden_dirpath, conf_fname)
+    conf_fname = os.path.join(hfiles_dirpath, conf_fname)
     dataset_conf = read_dataset_conf(conf_fname, logger=logger)
     
     # Harvest data for the specified date range from the remote archive.
     harvest_date_range(start_date, end_date, local_basedir, dataset_conf, 
-                       hidden_dirpath, tmp_dirpath, s3_basedir=s3_basedir, 
+                       hfiles_dirpath, s3_basedir=s3_basedir, 
                        s3_profile=s3_profile, logger=logger)
 
 
