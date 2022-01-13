@@ -1,7 +1,7 @@
-# CEDAS dataset configuration file
+# Harvester dataset configuration file
 #
-# The configuration parameters in this file are used by the CEDAS
-# automatic data harvesters to resolve paths to a dataset on a remote
+# The configuration parameters in this file are used by the 
+# automatic data harvester to resolve paths to a dataset on a remote
 # hosting site and to indicate local naming conventions for the files.
 #
 # In the filename template settings the following substrings may be used to
@@ -24,14 +24,24 @@
 #   d : days
 #   w : weeks
 #
-# Copy/rename this file to /path/to/your/dataset/directory/.cedas/dataset.yaml
-# and edit the lines below for your dataset.  For the local_path_template, 
-# omit the leading part of the absolute path to the top directory for the 
-# dataset and just provide the remainder of the dataset path, relative to 
-# that top directory. For example, omit /mydata/dataset1 and just set
-# local_path_template to "%Y/filename%Y%m%d.nc" in order to harvest data
-# separated out by year in directories like /mydata/dataset1/YYYY (for 4 
-# digit years, YYYY).  
+# The harvester requires pairs of local directories associated with a dataset
+# named DATASET, as follows:
+#
+# /path/to/my/data/DATASET
+# /path/to/my/data/harvester_files/DATASET
+#
+# The first path holds only the downloaded NetCDF files that were harvested.
+# The second path holds this dataset configuration, log files, and any other
+# files needed for downstream workflows.  So, you should copy this file to
+# /path/to/your/dataset/directory/../harvester_files/dataset.yaml
+# and edit the lines below for your dataset.
+#
+# For the local_path_template, omit the leading part of the absolute path
+# to the top directory for the dataset and just provide the remainder of
+# the dataset path, relative to that top directory. For example, omit
+# /mydata/dataset1 and just set local_path_template to "%Y/filename%Y%m%d.nc"
+# in order to harvest data separated out by year in directories like
+# /mydata/dataset1/YYYY (for 4 digit years, YYYY).  
 #
 url_template: "https://hostname.domain.com/base/path_for_date_%Y%m%d/filename_for_datetime_%Y-%m-%dT%H-%M-%S.ext"
 local_path_template: "relative_local_path_for_date_%Y%m%d/filename_for_datetime_%Y-%m-%dT%H-%M-%S.ext"
