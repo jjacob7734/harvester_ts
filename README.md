@@ -21,8 +21,10 @@ using the string substitution templates for elements of date or time,
 as described below.  You must define the following required keywords in
 `dataset.yaml`:
     * `url_template`: Web address of remote data granules.  These may
-    begin with `https://`, `http://`, or `ftp://`. If credentials are
-    required for the remote data access, they can be provided securely
+    begin with `https://`, `http://`, or `ftp://`. A wildcard character,
+    "*", maybe be used in place of any part of the filename part of the URL,
+    but it can only match a single file in the source archive. If credentials 
+    are required for the remote data access, they can be provided securely
     in your `.netrc` file.  For more information on how to use the `.netrc`
     file, see https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html.
     * `local_path_template`: Desired local path for data granules.  This

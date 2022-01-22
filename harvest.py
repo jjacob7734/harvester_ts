@@ -1,4 +1,5 @@
 import sys, os
+from glob import glob
 import argparse
 from datetime import datetime, timezone, timedelta
 import logging
@@ -6,7 +7,6 @@ import yaml
 from subprocess import run
 from netCDF4 import Dataset
 import boto3
-
 
 def parse_args():
     """Retrieve command line parameters.
@@ -189,19 +189,19 @@ def paths_generator(start_date, end_date, local_basedir, dataset_conf):
     time_incr = timedelta(**time_setting_dict(time_res))
     cur_date = start_date
     while cur_date <= end_date:
-        local_fname = replace_template(dataset_conf["local_path_template"],
-                                       cur_date)
+        local_rel_path = replace_template(dataset_conf["local_path_template"],
+                                          cur_date)
         url = replace_template(dataset_conf["url_template"], cur_date)
-        local_path = os.path.join(local_basedir, local_fname)
-        yield url, local_path, local_fname
+        local_abs_path = os.path.join(local_basedir, local_rel_path)
+        yield url, local_abs_path, local_rel_path
         cur_date += time_incr
 
-def upload_to_s3(local_path, s3_path, s3_profile):
+def upload_to_s3(local_abs_path, s3_path, s3_profile):
     s3_path_split = s3_path[5:].split('/')
     s3_bucket = s3_path_split[0]
     s3_key = os.path.join(*s3_path_split[1:])
     s3client = boto3.Session(profile_name=s3_profile).client('s3')
-    s3client.upload_file(local_path, s3_bucket, s3_key)
+    s3client.upload_file(local_abs_path, s3_bucket, s3_key)
 
 def harvest_date_range(start_date, end_date, local_basedir,
                        dataset_conf, hfiles_dirpath,
@@ -222,29 +222,67 @@ def harvest_date_range(start_date, end_date, local_basedir,
         raise OSError("Harvester files directory {} must be created.".\
                       format(hfiles_dirpath))
         
-    for url, local_path, local_fname in paths_generator(start_date, end_date,
-                                                        local_basedir,
-                                                        dataset_conf):
-        local_dir = os.path.dirname(local_path)
-        base_fname = os.path.basename(local_path)
-        tmp_fname = os.path.join(hfiles_dirpath, base_fname)
+    for url, local_abs_path, local_rel_path in \
+        paths_generator(start_date, end_date, local_basedir, dataset_conf):
+        local_dir = os.path.dirname(local_abs_path)
         if not os.path.exists(local_dir):
             os.makedirs(local_dir)
-        if not os.path.exists(local_path):
-            run(["wget", url, "-q", "-O", tmp_fname])
-            try:
-                rootgrp = Dataset(tmp_fname, "r", format="NETCDF4")
-            except:
-                if os.path.isfile(tmp_fname):
-                    os.remove(tmp_fname)
-                logger.error("Unable to download {}".format(url))
+        if not os.path.exists(local_abs_path):
+            if '*' in url:
+                # Use alternate form of wget command to support wildcards
+                # in the filename part of the URL path.  The wildcard 
+                # character ("*") can only appear in the filename, not in the
+                # directory path.  We split off the directory path and 
+                # filename parts of the URL and do a recursive download
+                # starting at the directory path and accepting only the 
+                # specified filename (with wildcard).
+                # 
+                url_dir = os.path.join(os.path.dirname(url), "")
+                if '*' in url_dir:
+                    raise ValueError("Wildcards only supported in the base filename in {}".format(url))
+                url_file = os.path.basename(url)
+                run(["wget", "-r", "-l1", "-nd", url_dir, "-A", url_file,
+                     "-P", hfiles_dirpath])
+                # Check what filenames were downloaded.  There will be 
+                # no files if the source archive hasn't produced a product
+                # for that date yet, otherwise, there could be 1 or more
+                # files depending on the wildcard match.  Currently
+                # we only support 1 wildcard match.
+                tmp_fnames = glob(os.path.join(hfiles_dirpath, url_file))
+                nfiles = len(tmp_fnames)
+                if nfiles == 0:
+                    tmp_fname = ""
+                elif nfiles == 1:
+                    tmp_fname = tmp_fnames[0]
+                    # Reconstruct the local paths without wildcards.
+                    local_rel_path = os.path.join(os.path.dirname(local_rel_path),
+                                                  os.path.basename(tmp_fname))
+                    local_abs_path = os.path.join(os.path.dirname(local_abs_path),
+                                                  os.path.basename(tmp_fname))
+                else:
+                    raise RuntimeError("Multiple wildcard matches not supported for {}".format(url))
             else:
-                os.rename(tmp_fname, local_path)
-                logger.warning("Downloaded {} to {}".format(url, local_path))
-                if s3_basedir is not None:
-                    s3_path = os.path.join(s3_basedir, local_fname)
-                    upload_to_s3(local_path, s3_path, s3_profile)
-                    logger.warning("Uploaded to {}".format(s3_path))
+                tmp_fname = os.path.join(hfiles_dirpath, local_rel_path)
+                run(["wget", url, "-q", "-O", tmp_fname])
+
+            # Validate that the downloaded file resembles a NetCDF file.
+            # If it does, move it to the final destination and upload to 
+            # S3 if that option is configured for the dataset.
+            if os.path.exists(tmp_fname):
+                try:
+                    rootgrp = Dataset(tmp_fname, "r", format="NETCDF4")
+                except:
+                    if os.path.isfile(tmp_fname):
+                        os.remove(tmp_fname)
+                    logger.error("Unable to download {}".format(url))
+                else:
+                    os.rename(tmp_fname, local_abs_path)
+                    logger.warning("Downloaded {} to {}".\
+                                   format(url, local_abs_path))
+                    if s3_basedir is not None:
+                        s3_path = os.path.join(s3_basedir, local_rel_path)
+                        upload_to_s3(local_abs_path, s3_path, s3_profile)
+                        logger.warning("Uploaded to {}".format(s3_path))
   
 def main():
     """Main program.  Parse arguments, and harvest the requested dates from

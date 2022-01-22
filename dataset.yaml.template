@@ -43,6 +43,9 @@
 # in order to harvest data separated out by year in directories like
 # /mydata/dataset1/YYYY (for 4 digit years, YYYY).  
 #
+# Any part of the filename part of the url_template may be replaced by the 
+# wildcard character, "*", but the number of files matched must be 1.
+#
 url_template: "https://hostname.domain.com/base/path_for_date_%Y%m%d/filename_for_datetime_%Y-%m-%dT%H-%M-%S.ext"
 local_path_template: "relative_local_path_for_date_%Y%m%d/filename_for_datetime_%Y-%m-%dT%H-%M-%S.ext"
 time_res: 1d
