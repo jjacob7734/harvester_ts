@@ -185,11 +185,14 @@ def paths_generator(start_date, end_date, local_basedir, dataset_conf):
         str: Remote url
         str: Local file name
     """
+    local_path_template = dataset_conf["local_path_template"]
+    if os.path.isabs(local_path_template):
+        raise ValueError("An absolute path was provided for the local_path_template in the dataset config ({}).  The local_path_template must be a relative path (relative to the dataset base directory provided as a command line argument with the -b option).".format(local_path_template))
     time_res = dataset_conf["time_res"]
     time_incr = timedelta(**time_setting_dict(time_res))
     cur_date = start_date
     while cur_date <= end_date:
-        local_rel_path = replace_template(dataset_conf["local_path_template"],
+        local_rel_path = replace_template(local_path_template,
                                           cur_date)
         url = replace_template(dataset_conf["url_template"], cur_date)
         local_abs_path = os.path.join(local_basedir, local_rel_path)
