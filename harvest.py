@@ -262,8 +262,8 @@ def harvest_date_range(start_date, end_date, local_basedir,
                 if '*' in url_dir:
                     raise ValueError("Wildcards only supported in the base filename in {}".format(url))
                 url_file = os.path.basename(url)
-                run(["wget", "-e", "-r", "-l1", "-nd", url_dir, "-A", url_file,
-                     "-P", hfiles_dirpath])
+                run(["wget", "-e", "robots=off", "-r", "-l1", "-nd", url_dir, 
+                     "-A", url_file, "-P", hfiles_dirpath])
                 # Check what filenames were downloaded.  There will be 
                 # no files if the source archive hasn't produced a product
                 # for that date yet, otherwise, there could be 1 or more
