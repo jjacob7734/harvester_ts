@@ -291,7 +291,7 @@ def harvest_date_range(start_date, end_date, local_basedir,
             # S3 if that option is configured for the dataset.
             if os.path.exists(tmp_fname):
                 if is_valid_file(tmp_fname):
-                    logger.critical"Looks like a valid file!")
+                    logger.info("Looks like a valid file!")
                     os.rename(tmp_fname, local_abs_path)
                     logger.warning("Downloaded {} to {}".\
                                    format(url, local_abs_path))
@@ -300,7 +300,7 @@ def harvest_date_range(start_date, end_date, local_basedir,
                         upload_to_s3(local_abs_path, s3_path, s3_profile)
                         logger.warning("Uploaded to {}".format(s3_path))
                 else:
-                    logger.critical("Looks like an invalid file so discarding it!")
+                    logger.info("Looks like an invalid file so discarding it!")
                     if os.path.isfile(tmp_fname):
                         os.remove(tmp_fname)
                     logger.error("Unable to download {}".format(url))
