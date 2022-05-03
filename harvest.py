@@ -7,6 +7,7 @@ import yaml
 from subprocess import run
 from netCDF4 import Dataset
 import boto3
+import pathlib
 
 def parse_args():
     """Retrieve command line parameters.
@@ -206,6 +207,23 @@ def upload_to_s3(local_abs_path, s3_path, s3_profile):
     s3client = boto3.Session(profile_name=s3_profile).client('s3')
     s3client.upload_file(local_abs_path, s3_bucket, s3_key)
 
+def is_valie_nc_file(f):
+    try:
+        rootgrp = Dataset(f, "r", format="NETCDF4")
+    except:
+        return False
+    else:
+        return True
+
+def is_valid_file(f):
+    file_extension = pathlib.Path(f).suffix
+    if file_extension == ".nc":
+        # NetCDF file.
+        return is_valid_nc_file(f)
+    else:
+        # File for which validation is not supported.  Assume valid.
+        return True
+
 def harvest_date_range(start_date, end_date, local_basedir,
                        dataset_conf, hfiles_dirpath,
                        s3_basedir=None, s3_profile=None, logger=None):
@@ -244,7 +262,7 @@ def harvest_date_range(start_date, end_date, local_basedir,
                 if '*' in url_dir:
                     raise ValueError("Wildcards only supported in the base filename in {}".format(url))
                 url_file = os.path.basename(url)
-                run(["wget", "-r", "-l1", "-nd", url_dir, "-A", url_file,
+                run(["wget", "-e", "-r", "-l1", "-nd", url_dir, "-A", url_file,
                      "-P", hfiles_dirpath])
                 # Check what filenames were downloaded.  There will be 
                 # no files if the source archive hasn't produced a product
@@ -272,13 +290,8 @@ def harvest_date_range(start_date, end_date, local_basedir,
             # If it does, move it to the final destination and upload to 
             # S3 if that option is configured for the dataset.
             if os.path.exists(tmp_fname):
-                try:
-                    rootgrp = Dataset(tmp_fname, "r", format="NETCDF4")
-                except:
-                    if os.path.isfile(tmp_fname):
-                        os.remove(tmp_fname)
-                    logger.error("Unable to download {}".format(url))
-                else:
+                if is_valid_file(tmp_fname):
+                    logger.critical"Looks like a valid file!")
                     os.rename(tmp_fname, local_abs_path)
                     logger.warning("Downloaded {} to {}".\
                                    format(url, local_abs_path))
@@ -286,6 +299,11 @@ def harvest_date_range(start_date, end_date, local_basedir,
                         s3_path = os.path.join(s3_basedir, local_rel_path)
                         upload_to_s3(local_abs_path, s3_path, s3_profile)
                         logger.warning("Uploaded to {}".format(s3_path))
+                else:
+                    logger.critical("Looks like an invalid file so discarding it!")
+                    if os.path.isfile(tmp_fname):
+                        os.remove(tmp_fname)
+                    logger.error("Unable to download {}".format(url))
   
 def main():
     """Main program.  Parse arguments, and harvest the requested dates from
