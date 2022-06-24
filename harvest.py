@@ -207,7 +207,7 @@ def upload_to_s3(local_abs_path, s3_path, s3_profile):
     s3client = boto3.Session(profile_name=s3_profile).client('s3')
     s3client.upload_file(local_abs_path, s3_bucket, s3_key)
 
-def is_valie_nc_file(f):
+def is_valid_nc_file(f):
     try:
         rootgrp = Dataset(f, "r", format="NETCDF4")
     except:
@@ -249,6 +249,7 @@ def harvest_date_range(start_date, end_date, local_basedir,
         if not os.path.exists(local_dir):
             os.makedirs(local_dir)
         if not os.path.exists(local_abs_path):
+            logger.info("Harvesting {}".format(url))
             if '*' in url:
                 # Use alternate form of wget command to support wildcards
                 # in the filename part of the URL path.  The wildcard 
@@ -311,6 +312,7 @@ def main():
     """
     # Initializer logger
     logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
     args = {}
 
     # Parse arguments and set date range to harvest
@@ -330,7 +332,6 @@ def main():
     logger.info("Harvesting between {} and {} to {}".format(start_date_str,
                                                             end_date_str,
                                                             local_basedir))
-   
     # Read dataset configuration
     conf_fname = "dataset.yaml"
     hfiles_dirname = "harvester_files"
